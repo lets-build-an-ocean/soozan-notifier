@@ -31,8 +31,14 @@ func NewTaskView(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, http.StatusCreated, TaskID)
 }
 
+func HealthCheckView(w http.ResponseWriter, r *http.Request) {
+	WriteResponse(w, http.StatusOK, "Hello Parsack !")
+
+}
+
 func main() {
 	http.HandleFunc("/new-task", NewTaskView)
+	http.HandleFunc("/health", HealthCheckView)
 	fmt.Println("🚀 Server running on http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }
