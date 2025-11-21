@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"gosms/logger"
 	"gosms/provider"
 )
 
@@ -24,6 +25,9 @@ func generateTaskID() string {
 func CreateTask(to string, text string) (TaskID string) {
 	Id := generateTaskID()
 	task := Task{Id: Id, To: to, Text: text}
+	
+	logger.Info("Task created and queued: " + Id)
+	
 	go HandleTask(task)
 	return Id
 }
@@ -32,15 +36,25 @@ func HandleTask(task Task) {
 	maxAttempts := 3
 	baseDelay := time.Second
 
+	logger.Info("Starting task processing: " + task.Id)
+
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		logger.Info(fmt.Sprintf("Attempt %d for task %s", attempt, task.Id))
+
 		status := provider.PushSMS(task.To, task.Text)
-		fmt.Printf("task : %s - attemp : %d - status : %d\n", task.Id, attempt, status)
 
 		if status == 200 {
+			logger.Info(fmt.Sprintf("SMS delivered successfully: %s", task.Id))
 			return
 		} else {
 			sleepDuration := baseDelay * (1 << (attempt - 1))
-			time.Sleep(sleepDuration)
+			
+			if attempt < maxAttempts {
+				logger.Warn(fmt.Sprintf("SMS delivery failed (status %d), retrying in %s: %s", status, sleepDuration, task.Id))
+				time.Sleep(sleepDuration)
+			} else {
+				logger.Error(fmt.Sprintf("SMS delivery failed after %d attempts: %s", maxAttempts, task.Id))
+			}
 		}
 	}
 }
