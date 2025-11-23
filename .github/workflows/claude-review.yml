@@ -1,0 +1,38 @@
+name: Claude PR Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Get PR diff
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} > diff.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Review with Claude
+        run: |
+          curl https://api.anthropic.com/v1/messages \
+            -H "x-api-key: ${{ secrets.ANTHROPIC_API_KEY }}" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "{
+              \"model\": \"claude-sonnet-4-20250514\",
+              \"max_tokens\": 4096,
+              \"messages\": [{
+                \"role\": \"user\",
+                \"content\": \"Review this PR diff:\n\n$(cat diff.txt)\"
+              }]
+            }" > review.json
+          
+      - name: Post comment
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "$(jq -r '.content[0].text' review.json)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
