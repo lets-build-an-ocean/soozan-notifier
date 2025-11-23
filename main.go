@@ -26,7 +26,6 @@ func NewTaskView(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&taskInput)
 
 	if err != nil {
-		logger.Error("Failed to decode JSON input: " + err.Error())
 		WriteResponse(w, http.StatusBadRequest, "Invalid JSON input")
 		return
 	}
@@ -34,9 +33,9 @@ func NewTaskView(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Creating SMS task for: " + taskInput.To)
 
 	TaskID := task.CreateTask(taskInput.To, taskInput.Text)
-	
+
 	logger.Info("Task created successfully: " + TaskID)
-	
+
 	WriteResponse(w, http.StatusCreated, TaskID)
 }
 
@@ -47,13 +46,13 @@ func HealthCheckView(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	logger.Info("Starting Soozan SMS Notifier service")
-	
+
 	http.HandleFunc("/new-task", NewTaskView)
 	http.HandleFunc("/health", HealthCheckView)
-	
+
 	logger.Info("🚀 Server running on http://localhost:8080")
 	fmt.Println("🚀 Server running on http://localhost:8080")
-	
+
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		logger.Fatal("Failed to start server: " + err.Error())
 	}
