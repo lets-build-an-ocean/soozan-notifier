@@ -12,13 +12,14 @@ Soozan Notifier is a **fire-and-forget** SMS microservice designed for maximum s
 
 ## 🏗️ Architecture
 
-┌─────────────────┐      ┌─────────────────┐      ┌───────────────────────────┐
-│   HTTP Client   │      │    Notifier     │      │   SMS Providers (4x try)  │
-│                 │───️──▶│                 │───️──▶├───────────────────────────┤
-│  POST /new-task │      │    Goroutine    │      │ 1. providers.Main         │
-│  GET  /health   │      │  2x Main Retry  │      │    └─ Fail? 1s sleep 🔄   │
-└─────────────────┘      │  2x Fallback    │      │ 2. providers.Fallback     │
-                         └─────────────────┘      └───────────────────────────┘
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   HTTP Client   │───▶│    Notifier     │───▶│  SMS Provider   │
+│                 │    │                 │    │                 │
+│  POST /new-task │    │  Goroutine      │    │  4 Tries (max)  │
+│  GET  /health   │    │  Retry Logic    │    │  2 Providers    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
 ## 🚦 Quick Start
 
