@@ -1,0 +1,30 @@
+stages:
+  - build
+  - deploy
+
+build_image:
+  stage: build
+  script:
+    # Fetch latest code
+    - cd /home/devops/soozan-notifier
+    - git fetch https://${GITLAB_DEPLOY_USER}:${GITLAB_DEPLOY_TOKEN}@git.soozan.info/backend/soozan-notifier.git main
+    - git reset --hard FETCH_HEAD
+    - git log -1
+    # Build image
+    - docker build -t soozan-notifier-image:${CI_COMMIT_SHORT_SHA} .
+  only:
+    - main
+
+
+deploy_service:
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - main
+  script:
+    # Deploy using the already-built image (no rebuild)
+    - cd /home/devops/soozan-infra
+    - export NOTIFIER_IMAGE_TAG=${CI_COMMIT_SHORT_SHA}
+    - docker compose up -d --wait --wait-timeout 60 notifier
+    - docker ps | grep api
